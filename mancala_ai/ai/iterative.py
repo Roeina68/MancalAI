@@ -2,12 +2,13 @@ import time
 from typing import Tuple, Optional
 from mancala_ai.game.board import Board
 from mancala_ai.ai.minimax import MinimaxAI
+from mancala_ai.ai.evaluation import EvaluationFunctions
 
 class IterativeDeepeningAI:
     """Implements iterative deepening with time limit for the Minimax algorithm."""
     
     def __init__(self,
-                 max_depth: int = 10,
+                 max_depth: int = 7,
                  time_limit: float = 5.0,
                  evaluation_func = None):
         """
@@ -18,6 +19,8 @@ class IterativeDeepeningAI:
             time_limit: Time limit per move in seconds
             evaluation_func: Function to evaluate board states
         """
+        if evaluation_func is None:
+            evaluation_func = EvaluationFunctions.advanced_evaluation
         self.max_depth = max_depth
         self.time_limit = time_limit
         self.evaluation_func = evaluation_func
@@ -35,15 +38,21 @@ class IterativeDeepeningAI:
         depth_reached = 0
         
         # Start with depth 1 and increase until time limit
+        previous_best = None  # Start with no prior move
+
         for depth in range(1, self.max_depth + 1):
             if time.time() - start_time >= self.time_limit:
                 break
-                
+
             self.minimax_ai.max_depth = depth
             try:
+                # Give a move ordering hint
+                self.minimax_ai.move_order_hint = previous_best
+
                 move = self.minimax_ai.get_best_move(board)
                 if move is not None:
                     best_move = move
+                    previous_best = move  # Use this for next depth
                     depth_reached = depth
                     self.last_depth = depth
                     self.last_nodes = self.minimax_ai.nodes_evaluated

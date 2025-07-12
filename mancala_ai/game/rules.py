@@ -108,3 +108,28 @@ class GameRules:
     def get_available_stones(board: Board) -> Tuple[int, int]:
         """Get the number of stones available to each player."""
         return (np.sum(board.pits[0]), np.sum(board.pits[1])) 
+    
+    @staticmethod
+    def apply_penalty_rule(board: Board) -> bool:
+        """
+        Apply the penalty redistribution rule.
+        
+        If the number of stones in the player's store equals the number of stones
+        in their closest pit (last pit on their side), remove 1 stone from the store
+        and add it to that closest pit.
+        
+        Returns True if the penalty was applied, False otherwise.
+        """
+        current_player = board.current_player
+        store_count = board.stores[current_player]
+        closest_pit_index = Board.PITS_PER_PLAYER - 1  # Last pit on the player's side
+        closest_pit_count = board.pits[current_player][closest_pit_index]
+        
+        # Check if the penalty condition is met
+        if store_count == closest_pit_count and store_count > 0:
+            # Apply penalty: remove 1 from store, add 1 to closest pit
+            board.stores[current_player] -= 1
+            board.pits[current_player][closest_pit_index] += 1
+            return True
+        
+        return False

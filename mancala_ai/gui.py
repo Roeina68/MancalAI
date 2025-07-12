@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mancala_ai.game.board import Board
 from mancala_ai.game.rules import GameRules
 from mancala_ai.ai.minimax import MinimaxAI
+from mancala_ai.ai.iterative import IterativeDeepeningAI
 
 class MancalaGUI:
     def __init__(self, root):
@@ -18,7 +19,9 @@ class MancalaGUI:
         
         # Game state
         self.board = Board()
-        self.ai = MinimaxAI(max_depth=3)
+        # self.ai = MinimaxAI(max_depth=4)
+        self.ai = IterativeDeepeningAI()
+
         self.game_over = False
 
         # Main frames
@@ -137,6 +140,11 @@ class MancalaGUI:
         self.log_action(f"Player picked pit {pit_index}")
 
         if success:
+            # Apply penalty rule after the move
+            penalty_applied = GameRules.apply_penalty_rule(self.board)
+            if penalty_applied:
+                self.log_action("⚠️ Penalty applied: 1 stone moved from store to closest pit")
+            
             self.update_display()
             if self.check_game_over():
                 return
@@ -151,11 +159,16 @@ class MancalaGUI:
         if self.game_over or self.board.current_player != 1:
             return
 
-        move = self.ai.get_best_move(self.board)
+        move, _ = self.ai.get_best_move(self.board)
         self.log_action(f"AI picked pit {move}")
         success, extra_turn = GameRules.make_move(self.board, move)
 
         if success:
+            # Apply penalty rule after the move
+            penalty_applied = GameRules.apply_penalty_rule(self.board)
+            if penalty_applied:
+                self.log_action("⚠️ Penalty applied: 1 stone moved from store to closest pit")
+            
             self.update_display()
             if self.check_game_over():
                 return

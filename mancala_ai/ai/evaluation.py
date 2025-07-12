@@ -34,9 +34,11 @@ class EvaluationFunctions:
         Advanced evaluation function that considers:
         - Basic evaluation components
         - Position of stones (stones closer to store are more valuable)
-        - Capture opportunities
+        - Capture opportunities (steals)
         - Extra turn opportunities
         - Empty pits (can be good for capturing)
+        - Vulnerability to steals (avoid leaving stones in pits adjacent to empty pits)
+        - Penalty rule considerations
         """
         # Get basic evaluation
         basic_score = EvaluationFunctions.basic_evaluation(board, player)
@@ -49,13 +51,27 @@ class EvaluationFunctions:
             position_score += board.pits[player][i] * position_weight
             position_score -= board.pits[1 - player][i] * position_weight
         
-        # Capture opportunity evaluation
-        capture_score = 0
+        # Steal opportunity evaluation (capture opportunities)
+        steal_score = 0
         for i in range(Board.PITS_PER_PLAYER):
             if board.pits[player][i] == 0:
                 opposite_pit = Board.PITS_PER_PLAYER - 1 - i
-                if board.pits[1 - player][opposite_pit] > 0:
-                    capture_score += 1
+                opposite_stones = board.pits[1 - player][opposite_pit]
+                if opposite_stones > 0:
+                    # More valuable if opponent has more stones to steal
+                    steal_score += opposite_stones * 0.3
+        
+        # Vulnerability to steals evaluation
+        vulnerability_score = 0
+        for i in range(Board.PITS_PER_PLAYER):
+            player_stones = board.pits[player][i]
+            if player_stones > 0:
+                # Check if opponent has an empty pit opposite to this one
+                opposite_pit = Board.PITS_PER_PLAYER - 1 - i
+                if board.pits[1 - player][opposite_pit] == 0:
+                    # Penalize having stones in pits that can be stolen from
+                    # More penalty for more stones
+                    vulnerability_score -= player_stones * 0.4
         
         # Extra turn opportunity evaluation
         extra_turn_score = 0
@@ -72,12 +88,30 @@ class EvaluationFunctions:
             if board.pits[player][i] == 0:
                 empty_pits_score += 0.5
         
+        # Penalty rule evaluation
+        penalty_score = 0
+        # Check if current player would trigger penalty rule
+        player_store = board.stores[player]
+        player_closest_pit = board.pits[player][Board.PITS_PER_PLAYER - 1]
+        if player_store == player_closest_pit and player_store > 0:
+            # Penalize configurations that would trigger the penalty rule
+            penalty_score -= 2.0
+        
+        # Check if opponent would trigger penalty rule (good for us)
+        opponent_store = board.stores[1 - player]
+        opponent_closest_pit = board.pits[1 - player][Board.PITS_PER_PLAYER - 1]
+        if opponent_store == opponent_closest_pit and opponent_store > 0:
+            # Reward configurations where opponent would trigger penalty
+            penalty_score += 1.5
+        
         # Combine all components with weights
         return (basic_score * 1.0 + 
                 position_score * 0.3 + 
-                capture_score * 0.2 +
+                steal_score * 0.5 +
+                vulnerability_score * 0.6 +
                 extra_turn_score * 0.4 +
-                empty_pits_score * 0.1)
+                empty_pits_score * 0.1 +
+                penalty_score * 0.8)
     
     @staticmethod
     def get_evaluation_functions() -> List[callable]:

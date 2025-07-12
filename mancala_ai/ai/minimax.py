@@ -8,8 +8,8 @@ class MinimaxAI:
     """Implements the Minimax algorithm with Alpha-Beta pruning for Mancala."""
     
     def __init__(self, 
-                 max_depth: int = 3,  # Reduced default depth
-                 evaluation_func: callable = EvaluationFunctions.basic_evaluation):  # Using simpler evaluation
+                 max_depth: int = 4,  # Reduced default depth
+                 evaluation_func: callable = EvaluationFunctions.advanced_evaluation):
         """
         Initialize the AI.
         
@@ -21,7 +21,7 @@ class MinimaxAI:
         self.evaluation_func = evaluation_func
         self.nodes_evaluated = 0
     
-    def get_best_move(self, board: Board) -> int:
+    def get_best_move(self, board: Board, start_time=None, time_limit=None) -> int:
         """
         Get the best move for the current player using Minimax with Alpha-Beta pruning.
         """
@@ -49,12 +49,14 @@ class MinimaxAI:
             current_player = board.current_player if gets_extra_turn else 1 - board.current_player
             
             # Evaluate move
-            score = self._minimax(board_copy, 
-                                self.max_depth - 1,
-                                alpha,
-                                beta,
-                                current_player,
-                                True)  # Always start with maximizing for current player
+            score = self._minimax(board_copy,
+                                  self.max_depth - 1,
+                                  alpha,
+                                  beta,
+                                  current_player,
+                                  True,
+                                  start_time=start_time,
+                                  time_limit=time_limit)
             
             if score > best_score:
                 best_score = score
@@ -67,33 +69,40 @@ class MinimaxAI:
             best_move = valid_moves[0]
             
         return best_move
-    
+
     def _minimax(self,
                  board: Board,
                  depth: int,
                  alpha: float,
                  beta: float,
                  current_player: int,
-                 is_maximizing: bool) -> float:
+                 is_maximizing: bool,
+                 start_time: Optional[float] = None,
+                 time_limit: Optional[float] = None) -> float:
         """
-        Recursive Minimax implementation with Alpha-Beta pruning.
+        Recursive Minimax implementation with Alpha-Beta pruning and optional timeout.
         """
+        # ⏱ Timeout check
+        if time_limit is not None and start_time is not None:
+            if time.time() - start_time > time_limit:
+                raise TimeoutError("Minimax exceeded time limit")
+
         self.nodes_evaluated += 1
-        
+
         # Check terminal conditions
         is_game_over, winner = GameRules.get_game_result(board)
         if is_game_over:
             if winner == -1:  # Draw
                 return 0
             return float('inf') if winner == board.current_player else float('-inf')
-            
+
         if depth == 0:
             return self.evaluation_func(board, board.current_player)
-            
+
         valid_moves = GameRules.get_legal_moves(board)
         if not valid_moves:
             return self.evaluation_func(board, board.current_player)
-            
+
         if is_maximizing:
             max_eval = float('-inf')
             for move in valid_moves:
@@ -106,13 +115,15 @@ class MinimaxAI:
                 # If player gets extra turn, keep maximizing, otherwise minimize
                 next_player = current_player if gets_extra_turn else 1 - current_player
                 next_is_maximizing = gets_extra_turn
-                
+
                 eval_score = self._minimax(board_copy,
-                                         depth - 1,
-                                         alpha,
-                                         beta,
-                                         next_player,
-                                         next_is_maximizing)
+                                           depth - 1,
+                                           alpha,
+                                           beta,
+                                           next_player,
+                                           next_is_maximizing,
+                                           start_time=start_time,
+                                           time_limit=time_limit)
                 max_eval = max(max_eval, eval_score)
                 alpha = max(alpha, eval_score)
                 if beta <= alpha:
