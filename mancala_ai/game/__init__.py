@@ -1,0 +1,1 @@
+"""Game package containing board representation and rules.""" 
