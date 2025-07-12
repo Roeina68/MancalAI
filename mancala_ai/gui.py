@@ -53,56 +53,56 @@ class MancalaGUI:
         self.top_pits = []
         self.bottom_pits = []
 
-        # Player store (left side) - column 0
-        player_store_frame = tk.Frame(self.board_frame)
-        player_store_frame.grid(row=0, column=0, rowspan=2, padx=10, pady=10)
-        
-        self.player_store = tk.Label(player_store_frame, text="0", width=6, height=8,
-                                     relief='raised', borderwidth=3, bg='lightgreen')
-        self.player_store.pack()
-        
-        player_label = tk.Label(player_store_frame, text="Player Store", font=('Arial', 10))
-        player_label.pack()
+        # AI store (left side) - column 0
+        ai_store_frame = tk.Frame(self.board_frame)
+        ai_store_frame.grid(row=0, column=0, rowspan=2, padx=10, pady=10)
+
+        self.ai_store = tk.Label(ai_store_frame, text="0", width=6, height=8,
+                                 relief='raised', borderwidth=3, bg='lightblue')
+        self.ai_store.pack()
+
+        ai_label = tk.Label(ai_store_frame, text="AI Store", font=('Arial', 10))
+        ai_label.pack()
 
         # AI pits (top row) - columns 1-6, reversed for visual clarity
         for i in range(Board.PITS_PER_PLAYER):
             pit_index = Board.PITS_PER_PLAYER - 1 - i
             pit_frame = tk.Frame(self.board_frame)
             pit_frame.grid(row=0, column=i + 1, padx=5, pady=5)
-            
+
             pit = tk.Label(pit_frame, text="4", width=8, height=3,
                            relief='raised', borderwidth=2, bg='lightgray')
             pit.pack()
-            
+
             pit_num = tk.Label(pit_frame, text=str(pit_index), font=('Arial', 8))
             pit_num.pack()
-            
+
             self.top_pits.append(pit)
 
         # Player pits (bottom row) - columns 1-6
         for i in range(Board.PITS_PER_PLAYER):
             pit_frame = tk.Frame(self.board_frame)
             pit_frame.grid(row=1, column=i + 1, padx=5, pady=5)
-            
+
             pit_num = tk.Label(pit_frame, text=str(i), font=('Arial', 8))
             pit_num.pack()
-            
+
             btn = tk.Button(pit_frame, text="4", width=8, height=3,
                             command=lambda x=i: self.handle_player_move(x))
             btn.pack()
-            
+
             self.bottom_pits.append(btn)
 
-        # AI store (right side) - column 7
-        ai_store_frame = tk.Frame(self.board_frame)
-        ai_store_frame.grid(row=0, column=Board.PITS_PER_PLAYER + 1, rowspan=2, padx=10, pady=10)
-        
-        self.ai_store = tk.Label(ai_store_frame, text="0", width=6, height=8,
-                                 relief='raised', borderwidth=3, bg='lightblue')
-        self.ai_store.pack()
-        
-        ai_label = tk.Label(ai_store_frame, text="AI Store", font=('Arial', 10))
-        ai_label.pack()
+        # Player store (right side) - column 7
+        player_store_frame = tk.Frame(self.board_frame)
+        player_store_frame.grid(row=0, column=Board.PITS_PER_PLAYER + 1, rowspan=2, padx=10, pady=10)
+
+        self.player_store = tk.Label(player_store_frame, text="0", width=6, height=8,
+                                     relief='raised', borderwidth=3, bg='lightgreen')
+        self.player_store.pack()
+
+        player_label = tk.Label(player_store_frame, text="Player Store", font=('Arial', 10))
+        player_label.pack()
 
     def update_display(self):
         for i in range(Board.PITS_PER_PLAYER):
@@ -164,6 +164,7 @@ class MancalaGUI:
                 self.root.after(1000, self.ai_turn)
             else:
                 self.board.switch_player()
+                self.update_display()  # Update display after switching player
 
     def check_game_over(self):
         is_over, winner = GameRules.get_game_result(self.board)
