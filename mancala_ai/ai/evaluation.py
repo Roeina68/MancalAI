@@ -71,7 +71,7 @@ class EvaluationFunctions:
                 if board.pits[1 - player][opposite_pit] == 0:
                     # Penalize having stones in pits that can be stolen from
                     # More penalty for more stones
-                    vulnerability_score -= player_stones * 0.4
+                    vulnerability_score -= player_stones * 0.3
         
         # Extra turn opportunity evaluation
         extra_turn_score = 0
@@ -104,6 +104,31 @@ class EvaluationFunctions:
             # Reward configurations where opponent would trigger penalty
             penalty_score += 1.5
         
+        # Blocking rule evaluation
+        blocking_score = 0
+        
+        # Check if current player is blocked (bad)
+        if board.blocked_pits[player] is not None:
+            blocked_pit = board.blocked_pits[player]
+            blocked_stones = board.pits[player][blocked_pit]
+            # Penalize being blocked, more penalty for more stones
+            blocking_score -= blocked_stones * 0.8
+        
+        # Check if opponent is blocked (good for us)
+        if board.blocked_pits[1 - player] is not None:
+            opponent_blocked_pit = board.blocked_pits[1 - player]
+            opponent_blocked_stones = board.pits[1 - player][opponent_blocked_pit]
+            # Reward blocking opponent, more reward for more stones
+            blocking_score += opponent_blocked_stones * 0.6
+        
+        # Evaluate blocking opportunities (if player hasn't used their block)
+        if board.can_block(player):
+            blockable_pits = board.get_blockable_pits(player)
+            if blockable_pits:
+                # Reward having blocking opportunities
+                best_block_value = max(board.pits[1 - player][pit] for pit in blockable_pits)
+                blocking_score += best_block_value * 0.3
+        
         # Combine all components with weights
         return (basic_score * 1.0 + 
                 position_score * 0.3 + 
@@ -111,7 +136,8 @@ class EvaluationFunctions:
                 vulnerability_score * 0.6 +
                 extra_turn_score * 0.4 +
                 empty_pits_score * 0.1 +
-                penalty_score * 0.8)
+                penalty_score * 0.8 +
+                blocking_score * 0.7)
     
     @staticmethod
     def get_evaluation_functions() -> List[callable]:

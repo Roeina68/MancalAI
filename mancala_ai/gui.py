@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 import sys
 import os
 
@@ -23,6 +23,7 @@ class MancalaGUI:
         self.ai = IterativeDeepeningAI()
 
         self.game_over = False
+        self.block_prompt_active = False
 
         # Main frames
         self.main_frame = tk.Frame(self.root)
@@ -48,6 +49,10 @@ class MancalaGUI:
 
         self.score_label = tk.Label(self.main_frame, text="Score: 0 - 0", font=('Arial', 12))
         self.score_label.grid(row=2, column=2)
+
+        # Block button (hidden by default)
+        self.block_btn = tk.Button(self.main_frame, text="Block Opponent's Pit", command=self.prompt_block, font=('Arial', 12), state='disabled')
+        self.block_btn.grid(row=3, column=1, pady=10)
 
         self.build_board()
         self.update_display()
@@ -108,15 +113,23 @@ class MancalaGUI:
         player_label.pack()
 
     def update_display(self):
+        # Mark blocked pits visually
+        ai_blocked = self.board.blocked_pits[1]
+        player_blocked = self.board.blocked_pits[0]
         for i in range(Board.PITS_PER_PLAYER):
+            # Player pits
             self.bottom_pits[i].config(text=str(self.board.pits[0][i]))
             self.bottom_pits[i].config(
                 state='normal' if self.board.pits[0][i] > 0 and not self.game_over else 'disabled',
                 bg='SystemButtonFace' if self.board.pits[0][i] > 0 else 'lightgray'
             )
-
-        for i in range(Board.PITS_PER_PLAYER):
+            if player_blocked == i:
+                self.bottom_pits[i].config(bg='red')
+            # AI pits
             self.top_pits[i].config(text=str(self.board.pits[1][Board.PITS_PER_PLAYER - 1 - i]))
+            self.top_pits[i].config(bg='lightgray')
+            if ai_blocked == Board.PITS_PER_PLAYER - 1 - i:
+                self.top_pits[i].config(bg='red')
 
         self.player_store.config(text=str(self.board.stores[0]))
         self.ai_store.config(text=str(self.board.stores[1]))
@@ -128,12 +141,18 @@ class MancalaGUI:
 
         self.score_label.config(text=f"Score: {self.board.stores[0]} - {self.board.stores[1]}")
 
+        # Enable/disable block button
+        if self.board.current_player == 0 and self.board.can_block(0) and not self.game_over:
+            self.block_btn.config(state='normal')
+        else:
+            self.block_btn.config(state='disabled')
+
     def handle_player_move(self, pit_index):
         if self.game_over or self.board.current_player != 0:
             return
 
         if not GameRules.is_valid_move(self.board, pit_index):
-            self.log_action(f"Invalid move: pit {pit_index} is empty")
+            self.log_action(f"Invalid move: pit {pit_index} is empty or blocked")
             return
 
         success, extra_turn = GameRules.make_move(self.board, pit_index)
@@ -145,15 +164,43 @@ class MancalaGUI:
             if penalty_applied:
                 self.log_action("⚠️ Penalty applied: 1 stone moved from store to closest pit")
             
+            # Clear any block on the player after they make their move
+            self.board.clear_block(0)
+            
             self.update_display()
             if self.check_game_over():
                 return
 
+            # No more automatic block prompt; player can use the block button if desired
             if not extra_turn:
                 self.board.switch_player()
+                # Clear any block on the AI after player's turn
+                self.board.clear_block(1)
                 self.root.after(1000, self.ai_turn)
             else:
                 self.log_action("Player gets an extra turn!")
+
+    def prompt_block(self):
+        # Prompt the player to select a pit to block
+        blockable = self.board.get_blockable_pits(0)
+        if not blockable:
+            self.log_action("No valid pits to block.")
+            self.block_prompt_active = False
+            self.update_display()
+            if not self.board.current_player == 0:
+                self.root.after(1000, self.ai_turn)
+            return
+        pit_str = ', '.join(str(i) for i in blockable)
+        answer = simpledialog.askinteger("Block Opponent's Pit", f"Enter pit index to block on AI side ({pit_str}):", minvalue=0, maxvalue=Board.PITS_PER_PLAYER-1)
+        if answer is not None and answer in blockable:
+            self.board.apply_block(0, answer)
+            self.log_action(f"You blocked AI's pit {answer} for their next turn!")
+        else:
+            self.log_action("No pit blocked.")
+        self.block_prompt_active = False
+        self.update_display()
+        if not self.board.current_player == 0:
+            self.root.after(1000, self.ai_turn)
 
     def ai_turn(self):
         if self.game_over or self.board.current_player != 1:
@@ -169,6 +216,10 @@ class MancalaGUI:
             if penalty_applied:
                 self.log_action("⚠️ Penalty applied: 1 stone moved from store to closest pit")
             
+            # AI blocking logic
+            blocked = GameRules.handle_blocking_after_move(self.board, 1)
+            if blocked:
+                self.log_action(f"AI blocked your pit {self.board.blocked_pits[0]} for your next turn!")
             self.update_display()
             if self.check_game_over():
                 return
@@ -177,6 +228,7 @@ class MancalaGUI:
                 self.root.after(1000, self.ai_turn)
             else:
                 self.board.switch_player()
+                # Don't clear the block yet - it should persist until player makes their move
                 self.update_display()  # Update display after switching player
 
     def check_game_over(self):
@@ -210,6 +262,7 @@ class MancalaGUI:
     def new_game(self):
         self.board = Board()
         self.game_over = False
+        self.block_prompt_active = False
         self.log_text.config(state=tk.NORMAL)
         self.log_text.delete(1.0, tk.END)
         self.log_text.insert(tk.END, "New game started! You are Player 1 (bottom row).\n")

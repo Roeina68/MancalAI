@@ -16,6 +16,10 @@ class Board:
         self.stores = np.zeros(2, dtype=int)
         self.current_player = 0  # 0 for player 1, 1 for player 2
         
+        # Blocking rule attributes
+        self.blocked_pits = {0: None, 1: None}  # Mapping player ID → blocked pit index
+        self.used_block = {0: False, 1: False}  # Track if each player has used their block
+        
     def validate_stone_count(self) -> bool:
         """Validate that the total number of stones is correct."""
         total_stones = (np.sum(self.pits) + np.sum(self.stores))
@@ -27,6 +31,8 @@ class Board:
         new_board.pits = self.pits.copy()
         new_board.stores = self.stores.copy()
         new_board.current_player = self.current_player
+        new_board.blocked_pits = self.blocked_pits.copy()
+        new_board.used_block = self.used_block.copy()
         return new_board
     
     def get_valid_moves(self) -> List[int]:
@@ -122,3 +128,45 @@ class Board:
         new_board = self.clone()
         new_board.switch_player()
         return new_board
+    
+    def can_block(self, player: int) -> bool:
+        """Check if a player can use their blocking ability."""
+        return not self.used_block[player]
+    
+    def get_blockable_pits(self, player: int) -> List[int]:
+        """Get list of opponent pits that can be blocked by the given player."""
+        opponent = 1 - player
+        opponent_pits = [i for i in range(Board.PITS_PER_PLAYER) 
+                        if self.pits[opponent][i] > 0]
+        
+        # If opponent has only one legal move, it cannot be blocked
+        if len(opponent_pits) == 1:
+            return []
+        
+        return opponent_pits
+    
+    def apply_block(self, player: int, pit_index: int) -> bool:
+        """
+        Apply a block on the opponent's pit.
+        Returns True if the block was successfully applied.
+        """
+        if not self.can_block(player):
+            return False
+        
+        opponent = 1 - player
+        if not 0 <= pit_index < Board.PITS_PER_PLAYER:
+            return False
+        
+        # Check if the pit can be blocked (opponent has other options)
+        blockable_pits = self.get_blockable_pits(player)
+        if pit_index not in blockable_pits:
+            return False
+        
+        # Apply the block
+        self.blocked_pits[opponent] = pit_index
+        self.used_block[player] = True
+        return True
+    
+    def clear_block(self, player: int):
+        """Clear the block effect for a player after their turn."""
+        self.blocked_pits[player] = None

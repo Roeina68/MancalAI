@@ -10,6 +10,11 @@ class GameRules:
         """Check if a move is valid."""
         if not 0 <= pit_index < Board.PITS_PER_PLAYER:
             return False
+        
+        # Check if the pit is blocked
+        if board.blocked_pits[board.current_player] == pit_index:
+            return False
+            
         return board.pits[board.current_player][pit_index] > 0
     
     @staticmethod
@@ -133,3 +138,55 @@ class GameRules:
             return True
         
         return False
+
+    @staticmethod
+    def handle_blocking_after_move(board: Board, player: int) -> bool:
+        """
+        Handle blocking logic after a player's move.
+        Returns True if a block was applied, False otherwise.
+        """
+        # Clear any existing block for the current player
+        board.clear_block(player)
+        
+        # Check if the player can and should block
+        if not board.can_block(player):
+            return False
+        
+        # Get blockable pits
+        blockable_pits = board.get_blockable_pits(player)
+        if not blockable_pits:
+            return False
+        
+        # For AI, automatically choose the best pit to block
+        # For human players, this will be handled by the GUI
+        if player == 1:  # AI player
+            # Advanced strategy: consider multiple factors
+            best_pit = None
+            best_score = -1
+            
+            for pit in blockable_pits:
+                score = 0
+                opponent_stones = board.pits[1 - player][pit]
+                
+                # Base score: more stones = better block
+                score += opponent_stones * 2.0
+                
+                # Bonus for blocking pits that could lead to steals
+                # Check if this pit could be used for stealing from AI
+                ai_opposite_pit = Board.PITS_PER_PLAYER - 1 - pit
+                if board.pits[player][ai_opposite_pit] == 0:
+                    score += opponent_stones * 1.5  # Extra bonus for preventing steals
+                
+                # Bonus for blocking pits that could lead to extra turns
+                # (pits closer to opponent's store)
+                position_bonus = (pit + 1) / Board.PITS_PER_PLAYER
+                score += opponent_stones * position_bonus
+                
+                if score > best_score:
+                    best_score = score
+                    best_pit = pit
+            
+            if best_pit is not None:
+                return board.apply_block(player, best_pit)
+        
+        return False  # Human player blocking will be handled by GUI
