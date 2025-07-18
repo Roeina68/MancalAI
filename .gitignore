@@ -1,0 +1,40 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# VS Code / PyCharm project settings
+.vscode/
+.idea/
+
+# OS / system files
+.DS_Store
+Thumbs.db
+
+# Jupyter/IPython notebooks and checkpoints (if relevant)
+.ipynb_checkpoints/
+
+# Logs and outputs
+*.log
+
+# Ignore test coverage reports
+htmlcov/
+*.cover
+coverage.xml
+*.lcov
+
+# Ignore user-specific files
+*.swp
+*~
+
+# Optional: ignore results or data caches
+*.npy
+*.npz
+runs/
+cache/
