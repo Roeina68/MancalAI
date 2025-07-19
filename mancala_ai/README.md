@@ -9,6 +9,7 @@ A Python implementation of the Mancala board game with an AI opponent using the 
 - Multiple evaluation strategies
 - Simulation framework for testing different AI agents
 - Comprehensive test suite
+- Playable via terminal or graphical interface (GUI)
 
 ## Installation
 
@@ -25,19 +26,51 @@ A Python implementation of the Mancala board game with an AI opponent using the 
 
 ## Usage
 
-To play against the AI:
+### Play Against the AI
+
+#### Terminal Mode (default)
+To play in the terminal:
 ```bash
-python main.py
+python -m mancala_ai.main
 ```
 
-To run simulations:
+#### GUI Mode
+To play with the graphical interface:
 ```bash
-python simulate/run_simulation.py
+python -m mancala_ai.main --gui
+# or
+python -m mancala_ai.main -g
 ```
 
-To run tests:
+#### Help
+To see all available options:
 ```bash
-pytest tests/
+python -m mancala_ai.main --help
+```
+
+### Default Parameters
+
+- **AI Agent:** The default AI is `MinimaxAI` with a search depth of 3.
+- **Evaluation Function:** The default evaluation function is `advanced_evaluation`, which considers:
+  - Store and pit stone differences
+  - Stone positions (closer to store is better)
+  - Capture (steal) opportunities
+  - Extra turn opportunities
+  - Empty pits and vulnerability to steals
+  - Penalty and blocking rules
+
+### Run Simulations
+
+To run AI-vs-AI simulations:
+```bash
+python -m mancala_ai.simulate.run_simulation
+```
+
+### Run Tests
+
+To run the test suite:
+```bash
+pytest mancala_ai/tests/
 ```
 
 ## Project Structure

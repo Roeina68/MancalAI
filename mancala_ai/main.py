@@ -1,4 +1,5 @@
 import sys
+import argparse
 from mancala_ai.game.board import Board
 from mancala_ai.game.rules import GameRules
 from mancala_ai.ai.minimax import MinimaxAI
@@ -29,14 +30,14 @@ def get_human_move(board: Board) -> int:
         except ValueError:
             print("Please enter a number between 0 and 5.")
 
-def main():
-    """Run the main game loop."""
+def run_terminal():
+    """Run the main game loop in terminal mode."""
     print("Welcome to Mancala!")
     print("You are Player 1 (bottom row)")
     
     # Initialize game
     board = Board()
-    ai = MinimaxAI(max_depth=3)
+    ai = MinimaxAI(max_depth=10)
     
     while True:
         print_board(board)
@@ -72,6 +73,18 @@ def main():
             board.switch_player()
             
         print("\n" + "=" * 30)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Mancala Game: Play in terminal or GUI mode.")
+    parser.add_argument('--gui', '-g', action='store_true', help='Run the Mancala game with a GUI')
+    args = parser.parse_args()
+
+    if args.gui:
+        from mancala_ai import gui
+        gui.main()
+    else:
+        run_terminal()
 
 if __name__ == "__main__":
     try:
