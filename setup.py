@@ -13,7 +13,7 @@ setup(
     author="Your Name",
     author_email="your.email@example.com",
     description="A Mancala game implementation with AI using Minimax algorithm",
-    long_description=open("mancala_ai/README.md").read(),
+    long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python :: 3",
