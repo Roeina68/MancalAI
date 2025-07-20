@@ -80,10 +80,10 @@ class GameRules:
         Returns: (is_game_over, winner)
         where winner is 0 for player 1, 1 for player 2, -1 for draw
         """
-        # מקרה 1: כל צד ריק
+        # Case 1: One side is empty
         no_stones = np.sum(board.pits[0]) == 0 or np.sum(board.pits[1]) == 0
         
-        # מקרה 2: אין מהלכים חוקיים לאף צד
+        # Case 2: Neither player has any legal moves
         no_legal_moves = (
             len(GameRules.get_legal_moves(board)) == 0 and
             len(GameRules.get_legal_moves(board.clone_with_switched_player())) == 0
@@ -92,7 +92,7 @@ class GameRules:
         if not (no_stones or no_legal_moves):
             return False, -1
 
-        # איסוף אבנים
+        # Collect remaining stones into stores
         board.stores[0] += np.sum(board.pits[0])
         board.stores[1] += np.sum(board.pits[1])
         board.pits.fill(0)
